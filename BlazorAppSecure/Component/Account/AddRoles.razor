@@ -1,0 +1,112 @@
+﻿@page "/addroles"
+@using BlazorAppSecure.Model
+@using BlazorAppSecure.Sevices
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "admin")]
+@inject IAccountManagement Acct
+<h3>AddRoles</h3>
+
+@if(roleList?.Count > 0)
+{
+    <ul>
+        @foreach (var item in roleList)
+        {
+            <li>
+                @item.Name
+            </li>
+        }
+    </ul>
+}
+<h1>@message</h1>
+@if (Roles?.Count == 0)
+{
+    <div>
+        <input type="text" @bind="NewRole" />
+        <button @onclick="AddRole">Add</button>
+    </div>
+}
+else
+{
+    @foreach (var role in Roles)
+    {
+        var correntrole = role;
+        <div>
+            <input disabled type="text" @bind="correntrole" />
+            <button @onclick="() => RemoveRole(correntrole)">Remove</button>
+        </div>
+    }
+
+    <div>
+        <input type="text" @bind="NewRole" />
+        <button @onclick="AddRole">Add</button>
+    </div>
+
+    <div>
+        <button @onclick="SubmitRole">Submit</button>
+    </div>
+
+    
+}
+<h1>@sumbitMesssage</h1>
+@code {
+    string sumbitMesssage;
+    string message;
+    List<string> Roles = new List<string>();
+    List<Role> roleList; // api return role list to bind
+    string NewRole { get; set; }
+
+    protected override void OnInitialized()
+    {
+        GetRoles();
+        base.OnInitialized();
+    }
+
+    private async void GetRoles()
+    {
+        var list = await Acct.GetRoles();
+        roleList = list.ToList();
+        StateHasChanged();
+    }
+
+    private void AddRole()
+    {
+        if (!string.IsNullOrWhiteSpace(NewRole))
+        {
+
+            var isExistRole = Roles.Exists(x => x.Contains(NewRole));
+            if (!isExistRole)
+            {
+                Roles.Add(NewRole);
+                message = string.Empty;
+            }
+            else
+            {
+                message = "already exists";
+            }
+            NewRole = string.Empty;
+        }
+    }
+
+    private void RemoveRole(string role)
+    {
+        Roles.Remove(role);
+    }
+
+    private async void SubmitRole()
+    {
+        sumbitMesssage = string.Empty;
+
+        var response =  await Acct.AddRole(Roles.ToArray());
+
+        if(response.Succeeded)
+        {
+            sumbitMesssage = "successfully saved";
+            Roles = new List<string>();
+        }
+        else
+        {
+            sumbitMesssage = "falied to saved role";
+        }
+        GetRoles();
+    }
+}

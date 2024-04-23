@@ -1,0 +1,74 @@
+﻿@page "/editUpdateUser/{emailId}"
+@using BlazorAppSecure.Model
+@using BlazorAppSecure.Sevices
+
+@inject IAccountManagement Acct
+@inject NavigationManager navManger
+<h3>EditUpdateUser</h3>
+
+@if (userModel != null)
+{
+    <EditForm Model="@userModel" OnValidSubmit="@UpdateUser">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="form-group">
+            <label for="name">Name:</label>
+            <InputText id="name" class="form-control disabled" @bind-Value="@userModel.UserName" />
+        </div>
+
+        <div class="form-group">
+            <label for="description">Email:</label>
+            <InputText id="description" class="form-control" @bind-Value="@userModel.Email" />
+        </div>
+
+        <div class="form-group">
+            <label for="description">PhoneNumber:</label>
+            <InputText id="description" class="form-control" @bind-Value="@userModel.PhoneNumber" />
+        </div>
+        <div class="form-group">
+            <label for="userRole">UserRole:</label>
+            <InputSelect id="userrole" class="form-control" @bind-Value="@SelectedRoles" multiple>
+                @foreach (var role in userModel.Roles)
+                {
+                    <option value="@role">@role</option>
+                }
+
+            </InputSelect>
+        </div>
+        <button type="submit" class="btn btn-primary">Update</button>
+    </EditForm>
+}
+else
+{
+    <p>Loading...</p>
+}
+@code {
+
+    [Parameter]
+    public string emailId { get; set; }
+    private UserViewModel userModel = new UserViewModel();
+
+    private string[] SelectedRoles = new string[] { };
+
+    protected async override Task OnInitializedAsync()
+    {
+        userModel = await Acct.GetUserByEmail(emailId);
+        SelectedRoles = userModel.Roles.ToArray();
+        var roles = await Acct.GetRoles();
+        userModel.Roles = roles.Select(x => x.Name).ToList();
+        base.OnInitializedAsync();
+    }
+
+    private async Task UpdateUser()
+    {
+        userModel.Roles = SelectedRoles.ToList();
+        if(await Acct.UserUpdate(emailId, userModel))
+        {
+            navManger.NavigateTo("/users");
+        }
+
+        var roles = await Acct.GetRoles();
+        userModel.Roles = roles.Select(x => x.Name).ToList();
+    }
+}

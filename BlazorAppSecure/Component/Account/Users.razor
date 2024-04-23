@@ -1,0 +1,72 @@
+﻿@page "/users"
+@using BlazorAppSecure.Model
+@using BlazorAppSecure.Sevices
+@using Microsoft.AspNetCore.Components.QuickGrid
+
+@inject IAccountManagement Acct
+@inject NavigationManager Navigation
+<h3>Users</h3>
+
+<div class="grid" tabindex="-1">
+<QuickGrid Items="@userList">
+    <PropertyColumn Property="@(p => p.UserName)" Sortable="true" />
+    <PropertyColumn Property="@(p => p.Email)" Sortable="true" />
+    <TemplateColumn Title="Roles" Sortable="false">
+        <div class="flex items-center">
+            <nobr>
+                @if (context.Roles != null && context.Roles?.Count > 0 )
+                {
+                    <ul>
+                @foreach (var item in context.Roles)
+                {
+                    <li>
+                    <strong>@item</strong>
+                            </li>
+                    }
+                    </ul>
+                }
+               
+                else
+                {
+                    <strong>------</strong>
+                }
+            </nobr>
+        </div>
+    </TemplateColumn>
+    <PropertyColumn Property="@(p => p.PhoneNumber)"  Sortable="true" />
+         <TemplateColumn Title="Actions">
+
+            <button class="btn btn-primary" @onclick="@(() => Edit(context))"> 
+               Edit
+            </button>
+            <button class="btn p-1 btn-danger" @onclick="@(() => Delete(context))">
+               Delete
+            </button>
+        </TemplateColumn>
+</QuickGrid>
+</div>
+
+@code {
+    private IQueryable<UserViewModel> userList;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var users = await Acct.GetUsers();
+        userList = users.ToList().AsQueryable();
+        base.OnInitializedAsync();
+    }
+
+    void Edit(UserViewModel p)
+    {
+        Navigation.NavigateTo($"editupdateuser/{p.Email}");        
+    } 
+    async void Delete(UserViewModel p)
+    {
+        if(await Acct.Delete(p.Email))
+        {
+            var users = await Acct.GetUsers();
+            userList = users.ToList().AsQueryable();
+            StateHasChanged();
+        }
+    }
+}
